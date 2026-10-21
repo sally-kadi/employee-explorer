@@ -13,6 +13,33 @@ type Post = {
 type Scenario = "success" | "slow" | "error" | "empty";
 type Status = "idle" | "loading" | "success" | "empty" | "error";
 
+// Friendly English text for displaying sample API posts
+const sampleTitles = [
+  "Getting Started with Our Team",
+  "A Day in the Life of an Employee",
+  "Working Together on New Projects",
+  "Building a Positive Workplace",
+  "Improving Communication at Work",
+  "Learning New Skills Every Day",
+  "Planning Our Next Team Project",
+  "Sharing Ideas and Solving Problems",
+  "Celebrating Team Achievements",
+  "Looking Ahead to Future Opportunities",
+];
+
+const sampleDescriptions = [
+  "Meet our team and learn how we collaborate to achieve our goals.",
+  "Discover the daily responsibilities and experiences of our employees.",
+  "Explore how teamwork helps us complete successful projects.",
+  "Learn why a supportive and welcoming workplace matters.",
+  "Find out how clear communication improves teamwork.",
+  "Discover opportunities for learning and professional growth.",
+  "See how we organize tasks and prepare for upcoming projects.",
+  "Learn how creative thinking helps us solve everyday challenges.",
+  "Celebrate important milestones and successful team projects.",
+  "Explore our plans for continuous improvement and future success.",
+];
+
 export default function AllPosts() {
   const [scenario, setScenario] = useState<Scenario>("success");
   const [status, setStatus] = useState<Status>("idle");
@@ -65,12 +92,12 @@ export default function AllPosts() {
 
   return (
     <section className="mt-6 rounded-xl bg-white p-6 shadow-md">
-      <h2 className="mb-4 text-xl font-semibold text-gray-900">
+      <h2 className="mb-2 text-xl font-semibold text-gray-900">
         Explore All Posts
       </h2>
 
       <p className="mb-4 text-gray-600">
-        Click the button to load employee posts.
+        Explore sample employee posts and test different API response scenarios.
       </p>
 
       <label
@@ -134,15 +161,21 @@ export default function AllPosts() {
             Successfully loaded {posts.length} posts!
           </p>
 
-          {posts.map((post) => (
+          <p className="text-sm text-gray-500">
+            Displaying friendly English descriptions for sample API data.
+          </p>
+
+          {posts.map((post, index) => (
             <article
               key={post.id}
               className="rounded-lg border border-gray-200 p-4"
             >
               <h3 className="mb-2 font-semibold text-gray-900">
-                {post.title}
+                {sampleTitles[index] ?? post.title}
               </h3>
-              <p className="text-gray-600">{post.body}</p>
+              <p className="text-gray-600">
+                {sampleDescriptions[index] ?? post.body}
+              </p>
             </article>
           ))}
         </div>
