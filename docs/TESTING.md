@@ -1,3 +1,4 @@
+
 # Assignment 3 – Testing Report
 
 **Developer:** Sally Kadi  
@@ -22,16 +23,16 @@ The employee profile and posts use separate demonstration APIs. The DummyJSON po
 |---|---|---|---|
 | Employee Profile | Display employee information | Name, email and company displayed | PASS |
 | Recent Posts | Display first three API posts | Three API posts displayed | PASS |
-| Success | Load 10 posts | Ten posts displayed during initial testing | PASS – ORIGINAL TEST |
-| Slow Response | Display loading, then posts | Loading message followed by posts | PASS – ORIGINAL TEST |
+| Success | Load 10 posts | Ten posts displayed; screenshot captured | PASS |
+| Slow Response | Display loading, then posts | Loading state observed; screenshot captured | PASS |
 | HTTP 503 | Display HTTP error and Retry | HTTP 503 message and Retry button appeared | PASS |
 | Empty Response | Display empty message | No posts found appeared | PASS |
-| Retry after Error | Repeat selected scenario | Not reconfirmed after latest changes | PENDING |
+| Retry after Error | Repeat selected scenario | Console confirmed two loadPosts calls: initial load and Retry; HTTP 503 displayed again | PASS |
 | Suspense Fallback | Show independent loading state | Observed during initial testing | PASS – ORIGINAL TEST |
 | Profile Request Failure | Display local error without breaking posts | Profile HTTP 503 message appeared while Recent Posts remained visible | PASS |
 | Recent Posts Request Failure | Display local error without breaking profile | Recent Posts HTTP 503 test completed | PASS |
 
-The original client test results were recorded before changing the posts API. The updated DummyJSON implementation should be retested before final submission.
+The original client tests were completed before changing the posts API. The updated implementation was subsequently checked in the browser, and client scenario screenshots were captured.
 
 ## 3. Updated Error Handling
 
@@ -55,19 +56,19 @@ The original implementation fetched posts from JSONPlaceholder.
 
 The updated implementation fetches English-language sample posts from DummyJSON and renders the actual `post.title` and `post.body` fields.
 
-**Original observed result:** Successfully loaded 10 posts.
+**Observed result:** Successfully loaded 10 posts.
 
-**Updated DummyJSON result:** Pending final browser reconfirmation.
+**Result:** PASS.
 
 ### Slow Response
 
 The client includes a two-second simulated delay before requesting posts.
 
-**Original observed result:** A loading message appeared, followed by posts.
+**Observed result:** A loading message appeared during the simulated delay.
 
-**Result:** PASS for the original loading and completion test.
+The delay is configured as 2000 milliseconds in the code. It was not independently measured with a timer.
 
-The configured delay was verified in code but not independently timed.
+**Result:** PASS for the observed loading state.
 
 ### HTTP 503 Error
 
@@ -85,21 +86,36 @@ The application throws `ApiError` when the response is unsuccessful.
 
 The application creates a successful local `Response` containing an empty posts collection.
 
-The updated DummyJSON implementation uses the response structure `{ posts: [] }`.
+The DummyJSON implementation uses the response structure `{ posts: [] }`.
 
 The response passes through the same JSON parsing and validation path as a successful API response.
 
-**Observed before the latest API change:** No posts found.
+**Observed:** No posts found.
 
-**Result:** PASS for the original test; updated implementation pending reconfirmation.
+**Result:** PASS.
 
 ### Retry
 
 Retry repeats the currently selected scenario.
 
-During original testing, retrying the HTTP 503 scenario reproduced the failure. Selecting Success and loading again returned posts.
+The Retry button calls the same `loadPosts()` function as the Load posts button.
 
-**Current review status:** PENDING reconfirmation after the latest changes.
+A temporary console log was added to verify that the function executed again.
+
+**Observed in the browser console:**
+
+```text
+Load posts triggered: error
+Load posts triggered: error
+```
+
+The first message came from clicking Load posts. The second appeared after clicking Retry.
+
+Because HTTP 503 is the selected scenario, the same error is expected to appear again.
+
+The temporary console logging was removed from the final source code.
+
+**Result:** PASS.
 
 ## 5. Independent Server Sections
 
@@ -133,25 +149,59 @@ These tests demonstrate that an expected request failure in one server section d
 | `npm run build` | PASS – production build completed |
 | TypeScript compilation | PASS |
 
-These results were observed in the local terminal on October 30, 2026, after the code updates.
+These results were observed in the local terminal on October 30, 2026.
+
+The commands should be rerun after the final source changes to reconfirm the final version.
 
 ## 7. Screenshot Evidence
 
-Screenshots should be stored in `docs/evidence/`.
+The following screenshots were captured during manual testing and uploaded to the `assignment-3-maya-interview` branch.
 
-Recommended evidence files:
+### Client Scenario Evidence
 
-- `success.png` – Employee Profile and Recent Posts
-- `client-success.png` – Successful client fetch
-- `client-loading.png` – Loading state
-- `client-503.png` – HTTP 503 error and Retry button
-- `client-empty.png` – Empty response
-- `profile-error.png` – Independent Employee Profile failure
-- `recent-posts-error.png` – Independent Recent Posts failure
-- `lint-pass.jpeg` – Successful lint command
-- `build-pass.jpeg` – Successful production build
+**Successful Response**
 
-These are intended filenames, not confirmation that the files have been saved. Only add Markdown image links after the corresponding screenshot files exist.
+![Successful client fetch](evidence/success.png)
+
+The application successfully loaded 10 posts and displayed their returned titles and bodies.
+
+**Slow Response**
+
+![Slow response loading state](evidence/slow-loading.png)
+
+The loading message was displayed during the simulated two-second delay.
+
+**HTTP 503 Error**
+
+![HTTP 503 error and Retry button](evidence/http-503.png)
+
+The simulated HTTP 503 response displayed an error message and a Retry button.
+
+**Empty Response**
+
+![Empty response](evidence/empty-response.png)
+
+The simulated empty response displayed "No posts found."
+
+### Code Quality Evidence
+
+**ESLint**
+
+![Lint passed](evidence/lint-pass.jpeg)
+
+The `npm run lint` command completed without reported errors.
+
+**Production Build**
+
+![Production build passed](evidence/build-pass.jpeg)
+
+The `npm run build` command completed successfully.
+
+### Independent Server Failure Evidence
+
+The Employee Profile and Recent Posts HTTP 503 scenarios were tested separately.
+
+Screenshots of these two server-section failures have not yet been added to this evidence folder.
 
 ## 8. Corrections After Review
 
@@ -167,9 +217,9 @@ Following the review, the implementation was corrected to:
 - Change the client slow simulation from three seconds to two seconds.
 - Separate data-loading error handling from JSX rendering to satisfy lint requirements.
 
-The posts API was also changed to DummyJSON to display more readable English-language sample content. This is an additional change made after the original tests.
+The posts API was also changed to DummyJSON to display more readable English-language sample content.
 
-The original predictions and observations should remain documented rather than being rewritten as though the corrected implementation existed from the beginning.
+The original predictions and observations remain documented rather than being rewritten as though the corrected implementation existed from the beginning.
 
 ## 9. Known Limitations
 
@@ -177,8 +227,8 @@ The original predictions and observations should remain documented rather than b
 - HTTP 503 and Empty scenarios are simulated locally.
 - Retry repeats the selected scenario, including the selected error.
 - No automated test suite has been added.
-- Some final client scenarios need reconfirmation after changing the posts API.
-- Screenshot evidence must be attached before final submission.
+- The two independent server failure tests do not yet have screenshot evidence.
+- The simulated two-second delay was verified in code but not independently timed.
 
 ## 10. Conclusion
 
@@ -186,6 +236,6 @@ The assignment now includes custom HTTP error handling, shared response-processi
 
 Independent Profile and Recent Posts failure simulations were completed.
 
-Lint and production build checks passed.
+The client scenarios, including Retry, were tested manually.
 
-Remaining work includes reconfirming the updated client scenarios, attaching screenshot evidence, reviewing the interview documentation, and pushing the completed assignment to the required GitHub branch.
+Lint and production build checks passed before the latest documentation update. Final checks and Git push remain to be completed.
