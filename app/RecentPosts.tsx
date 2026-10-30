@@ -1,4 +1,6 @@
 
+import { ApiError } from "./ApiError";
+
 type Post = {
   id: number;
   userId: number;
@@ -6,25 +8,76 @@ type Post = {
   body: string;
 };
 
-const englishTitles: Record<number, string> = {
-  1: "Getting Started with Our Team",
-  2: "A Day in the Life of an Employee",
-  3: "Working Together on New Projects",
-};
+type PostsResult =
+  | { success: true; posts: Post[] }
+  | { success: false; message: string };
 
-export default async function RecentPosts() {
+async function getRecentPosts(): Promise<Post[]> {
   await new Promise((resolve) => setTimeout(resolve, 2000));
 
   const response = await fetch(
-    "https://jsonplaceholder.typicode.com/posts?userId=1",
+    "https://dummyjson.com/posts?limit=10",
     { cache: "no-store" }
   );
 
   if (!response.ok) {
-    throw new Error("Failed to load recent posts");
+    throw new ApiError(
+      "Failed to load recent posts",
+      response.status
+    );
   }
 
-  const posts: Post[] = await response.json();
+  const data: { posts: Post[] } = await response.json();
+
+  if (!Array.isArray(data.posts)) {
+    throw new Error("Invalid posts response format");
+  }
+
+  return data.posts;
+}
+
+async function loadRecentPosts(): Promise<PostsResult> {
+  try {
+    const posts = await getRecentPosts();
+    return { success: true, posts };
+  } catch (error) {
+    if (error instanceof ApiError) {
+      return {
+        success: false,
+        message: `Recent posts API error (HTTP ${error.status}).`,
+      };
+    }
+
+    if (error instanceof TypeError) {
+      return {
+        success: false,
+        message: "Network error while loading recent posts.",
+      };
+    }
+
+    return {
+      success: false,
+      message: "Unable to load recent posts.",
+    };
+  }
+}
+
+export default async function RecentPosts() {
+  const result = await loadRecentPosts();
+
+  if (!result.success) {
+    return (
+      <section
+        role="alert"
+        className="mt-6 rounded-xl bg-red-50 p-6 shadow-md"
+      >
+        <h2 className="mb-2 text-xl font-semibold text-red-800">
+          Recent Posts
+        </h2>
+        <p className="text-red-700">{result.message}</p>
+      </section>
+    );
+  }
 
   return (
     <section className="mt-6 rounded-xl bg-white p-6 shadow-md">
@@ -33,19 +86,26 @@ export default async function RecentPosts() {
       </h2>
 
       <p className="mb-4 text-sm text-gray-500">
-        Sample posts retrieved from the API.
+        Recent posts retrieved from DummyJSON API.
       </p>
 
-      <ul className="space-y-3">
-        {posts.slice(0, 3).map((post) => (
-          <li
-            key={post.id}
-            className="rounded-lg border border-gray-200 p-3 text-gray-800"
-          >
-            {englishTitles[post.id] ?? post.title}
-          </li>
-        ))}
-      </ul>
+      {result.posts.length === 0 ? (
+        <p className="text-gray-600">No recent posts found.</p>
+      ) : (
+        <ul className="space-y-3">
+          {result.posts.slice(0, 3).map((post) => (
+            <li
+              key={post.id}
+              className="rounded-lg border border-gray-200 p-3"
+            >
+              <h3 className="mb-2 font-semibold text-gray-900">
+                {post.title}
+              </h3>
+              <p className="text-gray-600">{post.body}</p>
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   );
 }

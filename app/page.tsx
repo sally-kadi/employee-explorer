@@ -2,6 +2,7 @@
 import { Suspense } from "react";
 import RecentPosts from "./RecentPosts";
 import AllPosts from "./AllPosts";
+import { ApiError } from "./ApiError";
 
 type Employee = {
   id: number;
@@ -12,6 +13,10 @@ type Employee = {
   };
 };
 
+type EmployeeResult =
+  | { success: true; employee: Employee }
+  | { success: false; message: string };
+
 async function getEmployee(): Promise<Employee> {
   const response = await fetch(
     "https://jsonplaceholder.typicode.com/users/1",
@@ -19,14 +24,64 @@ async function getEmployee(): Promise<Employee> {
   );
 
   if (!response.ok) {
-    throw new Error("Failed to load employee");
+    throw new ApiError(
+      "Failed to load employee",
+      response.status
+    );
   }
 
   return response.json();
 }
 
+async function loadEmployee(): Promise<EmployeeResult> {
+  try {
+    const employee = await getEmployee();
+
+    return {
+      success: true,
+      employee,
+    };
+  } catch (error) {
+    if (error instanceof ApiError) {
+      return {
+        success: false,
+        message: `Employee API error (HTTP ${error.status}).`,
+      };
+    }
+
+    if (error instanceof TypeError) {
+      return {
+        success: false,
+        message: "Network error while loading employee.",
+      };
+    }
+
+    return {
+      success: false,
+      message: "Unable to load employee profile.",
+    };
+  }
+}
+
 async function EmployeeProfile() {
-  const employee = await getEmployee();
+  const result = await loadEmployee();
+
+  if (!result.success) {
+    return (
+      <section
+        role="alert"
+        className="rounded-xl bg-red-50 p-6 shadow-md"
+      >
+        <h2 className="mb-2 text-xl font-semibold text-red-800">
+          Employee Profile
+        </h2>
+
+        <p className="text-red-700">{result.message}</p>
+      </section>
+    );
+  }
+
+  const employee = result.employee;
 
   return (
     <section className="rounded-xl bg-white p-6 shadow-md">
@@ -38,9 +93,11 @@ async function EmployeeProfile() {
         <p>
           <strong>Name:</strong> {employee.name}
         </p>
+
         <p>
           <strong>Email:</strong> {employee.email}
         </p>
+
         <p>
           <strong>Company:</strong> {employee.company.name}
         </p>
@@ -61,7 +118,6 @@ export default function Home() {
           Assignment 3 - Yehia Meets Maya
         </p>
 
-        {/* Employee Profile */}
         <Suspense
           fallback={
             <div
@@ -75,7 +131,6 @@ export default function Home() {
           <EmployeeProfile />
         </Suspense>
 
-        {/* Recent Posts */}
         <Suspense
           fallback={
             <div
@@ -89,7 +144,6 @@ export default function Home() {
           <RecentPosts />
         </Suspense>
 
-        {/* Client-side Posts */}
         <AllPosts />
       </div>
     </main>

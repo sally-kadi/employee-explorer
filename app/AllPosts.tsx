@@ -2,6 +2,7 @@
 "use client";
 
 import { useState } from "react";
+import { ApiError } from "./ApiError";
 
 type Post = {
   id: number;
@@ -10,35 +11,15 @@ type Post = {
   body: string;
 };
 
+type PostsResponse = {
+  posts: Post[];
+  total: number;
+  skip: number;
+  limit: number;
+};
+
 type Scenario = "success" | "slow" | "error" | "empty";
 type Status = "idle" | "loading" | "success" | "empty" | "error";
-
-// Friendly English text for displaying sample API posts
-const sampleTitles = [
-  "Getting Started with Our Team",
-  "A Day in the Life of an Employee",
-  "Working Together on New Projects",
-  "Building a Positive Workplace",
-  "Improving Communication at Work",
-  "Learning New Skills Every Day",
-  "Planning Our Next Team Project",
-  "Sharing Ideas and Solving Problems",
-  "Celebrating Team Achievements",
-  "Looking Ahead to Future Opportunities",
-];
-
-const sampleDescriptions = [
-  "Meet our team and learn how we collaborate to achieve our goals.",
-  "Discover the daily responsibilities and experiences of our employees.",
-  "Explore how teamwork helps us complete successful projects.",
-  "Learn why a supportive and welcoming workplace matters.",
-  "Find out how clear communication improves teamwork.",
-  "Discover opportunities for learning and professional growth.",
-  "See how we organize tasks and prepare for upcoming projects.",
-  "Learn how creative thinking helps us solve everyday challenges.",
-  "Celebrate important milestones and successful team projects.",
-  "Explore our plans for continuous improvement and future success.",
-];
 
 export default function AllPosts() {
   const [scenario, setScenario] = useState<Scenario>("success");
@@ -53,39 +34,78 @@ export default function AllPosts() {
 
     try {
       if (scenario === "slow") {
-        await new Promise((resolve) => setTimeout(resolve, 3000));
+        await new Promise((resolve) => setTimeout(resolve, 2000));
       }
+
+      let response: Response;
 
       if (scenario === "error") {
-        throw new Error("HTTP 503: Service unavailable");
+        response = new Response(
+          JSON.stringify({ message: "Service unavailable" }),
+          {
+            status: 503,
+            statusText: "Service Unavailable",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        );
+      } else if (scenario === "empty") {
+        response = new Response(
+          JSON.stringify({
+            posts: [],
+            total: 0,
+            skip: 0,
+            limit: 10,
+          }),
+          {
+            status: 200,
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        );
+      } else {
+        response = await fetch(
+          "https://dummyjson.com/posts?limit=10",
+          { cache: "no-store" }
+        );
       }
-
-      if (scenario === "empty") {
-        setStatus("empty");
-        return;
-      }
-
-      const response = await fetch(
-        "https://jsonplaceholder.typicode.com/posts?userId=1",
-        { cache: "no-store" }
-      );
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: Failed to load posts`);
+        throw new ApiError(
+          "Failed to load posts",
+          response.status
+        );
       }
 
-      const data: Post[] = await response.json();
+      const data: PostsResponse = await response.json();
 
-      if (data.length === 0) {
+      if (!data || !Array.isArray(data.posts)) {
+        throw new Error("Invalid API response format");
+      }
+
+      if (data.posts.length === 0) {
         setStatus("empty");
       } else {
-        setPosts(data);
+        setPosts(data.posts);
         setStatus("success");
       }
     } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : "Something went wrong"
-      );
+      if (error instanceof ApiError) {
+        setErrorMessage(
+          `HTTP ${error.status}: ${error.message}`
+        );
+      } else if (error instanceof TypeError) {
+        setErrorMessage(
+          "Network error. Please check your connection and try again."
+        );
+      } else if (error instanceof Error) {
+        setErrorMessage(error.message);
+      } else {
+        setErrorMessage("An unexpected error occurred.");
+      }
+
       setStatus("error");
     }
   }
@@ -97,7 +117,8 @@ export default function AllPosts() {
       </h2>
 
       <p className="mb-4 text-gray-600">
-        Explore sample employee posts and test different API response scenarios.
+        Explore sample posts in English and test different
+        API response scenarios.
       </p>
 
       <label
@@ -140,8 +161,14 @@ export default function AllPosts() {
       )}
 
       {status === "error" && (
-        <div role="alert" className="mt-4 rounded-lg bg-red-50 p-4">
-          <p className="mb-3 text-red-700">{errorMessage}</p>
+        <div
+          role="alert"
+          className="mt-4 rounded-lg bg-red-50 p-4"
+        >
+          <p className="mb-3 text-red-700">
+            {errorMessage}
+          </p>
+
           <button
             onClick={loadPosts}
             className="rounded-lg bg-red-600 px-4 py-2 text-white"
@@ -152,7 +179,9 @@ export default function AllPosts() {
       )}
 
       {status === "empty" && (
-        <p className="mt-4 text-gray-600">No posts found.</p>
+        <p className="mt-4 text-gray-600">
+          No posts found.
+        </p>
       )}
 
       {status === "success" && (
@@ -161,20 +190,17 @@ export default function AllPosts() {
             Successfully loaded {posts.length} posts!
           </p>
 
-          <p className="text-sm text-gray-500">
-            Displaying friendly English descriptions for sample API data.
-          </p>
-
-          {posts.map((post, index) => (
+          {posts.map((post) => (
             <article
               key={post.id}
               className="rounded-lg border border-gray-200 p-4"
             >
               <h3 className="mb-2 font-semibold text-gray-900">
-                {sampleTitles[index] ?? post.title}
+                {post.title}
               </h3>
+
               <p className="text-gray-600">
-                {sampleDescriptions[index] ?? post.body}
+                {post.body}
               </p>
             </article>
           ))}
